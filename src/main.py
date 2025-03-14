@@ -1,4 +1,4 @@
-from feature.timekepping_dashboard import TimekeppingDashboard
+from feature.timekepping.timekepping_dashboard import TimekeppingDashboard
 
 def main():
     renderDashboard = TimekeppingDashboard()
