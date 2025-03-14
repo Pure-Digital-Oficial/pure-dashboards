@@ -26,23 +26,38 @@ class TimekeppingDashboard:
         }
 
         st.set_page_config(layout='wide')
-        name = data['Nome'].str.strip()
-        name = name.str.upper().unique().tolist()
+        names = data['Nome'].str.strip()
+        names = names.str.upper().unique().tolist()
 
-        modality = data['Modalidade'].str.strip()
-        modality = modality.str.upper().unique().tolist()
+        modalities = data['Modalidade'].str.strip()
+        modalities = modalities.str.upper().unique().tolist()
 
         filterData = data['Data'].str.strip()
-        mes = pd.to_datetime(filterData, format='%d/%m/%Y').dt.month.sort_values(ascending=True).unique().tolist()
-        mes = [monthPtBr[mes] for mes in mes]
-        ano = pd.to_datetime(filterData, format='%d/%m/%Y').dt.year.sort_values(ascending=True).unique().tolist()
+        months = pd.to_datetime(filterData, format='%d/%m/%Y').dt.month.sort_values(ascending=True).unique().tolist()
+        months = [monthPtBr[months] for months in months]
+        years = pd.to_datetime(filterData, format='%d/%m/%Y').dt.year.sort_values(ascending=True).unique().tolist()
 
         st.title('DASHBOARD PURE DIGITAL :shopping_trolley:')
 
         st.sidebar.title('Filtros')
-        st.sidebar.selectbox('Equipe', ['Todos'] + name)
-        st.sidebar.selectbox('Modalidades', ['Todos'] + modality)
-        st.sidebar.selectbox('Ano', ['Todos'] + ano)
-        st.sidebar.selectbox('Mês',  ['Todos'] + mes)
+        selected_name = st.sidebar.selectbox('Equipe', ['Todos'] + names)
+        selected_modality = st.sidebar.selectbox('Modalidades', ['Todos'] + modalities)
+        selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
+        selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
 
-        st.dataframe(data)
+        filtered_data = data.copy()
+
+        if selected_name != 'Todos':
+            filtered_data = filtered_data[filtered_data['Nome'].str.upper() == selected_name]
+
+        if selected_modality != 'Todos':
+            filtered_data = filtered_data[filtered_data['Modalidade'].str.upper() == selected_modality]
+
+        if selected_year != 'Todos':
+            filtered_data = filtered_data[pd.to_datetime(filterData, format='%d/%m/%Y').dt.year == selected_year]
+
+        if selected_month != 'Todos':
+            month_number = list(monthPtBr.keys())[list(monthPtBr.values()).index(selected_month)]
+            filtered_data = filtered_data[pd.to_datetime(filterData, format='%d/%m/%Y').dt.month == month_number]
+        
+        st.dataframe(filtered_data)
