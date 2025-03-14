@@ -1,11 +1,8 @@
-from data_access.google_sheet_render import GoogleSheetsReader
+from feature.timekepping_dashboard import TimekeppingDashboard
 
 def main():
-    reader = GoogleSheetsReader()
-
-    df = reader.get_dataframe()
-    
-    print(df)
+    renderDashboard = TimekeppingDashboard()
+    renderDashboard.renderPage()
 
 if __name__ == "__main__":
     main()
