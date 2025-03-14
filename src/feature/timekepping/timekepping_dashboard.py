@@ -1,6 +1,8 @@
+# main.py
 import streamlit as st
 import pandas as pd
 from data_access.google_sheet_render import GoogleSheetsReader
+from feature.timekepping.timekepping_data_filter import TimekeppingDataFilter
 
 class TimekeppingDashboard:
     def __init__(self):
@@ -34,7 +36,7 @@ class TimekeppingDashboard:
 
         filterData = data['Data'].str.strip()
         months = pd.to_datetime(filterData, format='%d/%m/%Y').dt.month.sort_values(ascending=True).unique().tolist()
-        months = [monthPtBr[months] for months in months]
+        months = [monthPtBr[month] for month in months]
         years = pd.to_datetime(filterData, format='%d/%m/%Y').dt.year.sort_values(ascending=True).unique().tolist()
 
         st.title('DASHBOARD PURE DIGITAL :shopping_trolley:')
@@ -45,19 +47,12 @@ class TimekeppingDashboard:
         selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
         selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
 
-        filtered_data = data.copy()
+        data_filter = TimekeppingDataFilter(data)
+        filtered_data = data_filter \
+            .filter_by_name(selected_name) \
+            .filter_by_modality(selected_modality) \
+            .filter_by_year(selected_year, filterData) \
+            .filter_by_month(selected_month, filterData, monthPtBr) \
+            .get_filtered_data()
 
-        if selected_name != 'Todos':
-            filtered_data = filtered_data[filtered_data['Nome'].str.upper() == selected_name]
-
-        if selected_modality != 'Todos':
-            filtered_data = filtered_data[filtered_data['Modalidade'].str.upper() == selected_modality]
-
-        if selected_year != 'Todos':
-            filtered_data = filtered_data[pd.to_datetime(filterData, format='%d/%m/%Y').dt.year == selected_year]
-
-        if selected_month != 'Todos':
-            month_number = list(monthPtBr.keys())[list(monthPtBr.values()).index(selected_month)]
-            filtered_data = filtered_data[pd.to_datetime(filterData, format='%d/%m/%Y').dt.month == month_number]
-        
         st.dataframe(filtered_data)
