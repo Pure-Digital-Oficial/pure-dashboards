@@ -55,4 +55,13 @@ class TimekeppingDashboard:
             .filter_by_month(selected_month, filterData, monthPtBr) \
             .get_filtered_data()
 
+        tabQuantity = st.tabs(['Apontamentos'])[0]
+
+        with tabQuantity:
+            columnLeft, columnRight = st.columns(2)
+            with columnLeft:
+                st.metric('Qtd Horas Apontadas', pd.to_numeric(filtered_data['Horas'].str.replace(',', '.')).sum())
+            with columnRight:
+                st.metric('Qtd de Apontamentos', filtered_data['Horas'].count())
+        
         st.dataframe(filtered_data)
