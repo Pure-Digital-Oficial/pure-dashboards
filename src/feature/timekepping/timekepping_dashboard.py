@@ -8,6 +8,14 @@ class TimekeppingDashboard:
     def __init__(self):
         pass
     
+    def ajustTitle(self, text, module):
+        if module.lower() == "s":
+            return f'{text} (SOMA)'
+        elif module.lower() == "q":
+            return f'{text} (QUANTIDADE)'
+        else:
+            return "Entrada inválida"
+
     def renderPage(self):
         readerGoogle = GoogleSheetsReader()
         data = readerGoogle.get_dataframe()
@@ -71,7 +79,7 @@ class TimekeppingDashboard:
         selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
         selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
         selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
-            
+
         data_filter = TimekeppingDataFilter(data)
         filtered_data = data_filter \
             .filter_by_name(selected_name) \
@@ -109,13 +117,13 @@ class TimekeppingDashboard:
         fig_sum_hours_team = px.bar(
             sumHoursFromTeamMember,
             text_auto = True,
-            title = 'Horas apontadas por Membro (SOMA)'
+            title = self.ajustTitle('Horas apontadas por Membro ', 's')
         )
 
         fig_quantity_hours_team = px.bar(
             quantityHoursFromTeamMember,
             text_auto = True,
-            title = 'Horas apontadas por Membro (QUANTIDADE)'
+            title = self.ajustTitle('Horas apontadas por Membro ', 'q')
         )
 
         fig_sum_hours_month = px.line(sumHoursFromMonth,
@@ -125,7 +133,7 @@ class TimekeppingDashboard:
                              range_y= (0, sumHoursFromMonth.max()),
                              color= 'Ano',
                              line_dash= 'Ano',
-                             title= 'Apontamentos Mensais (SOMA)')
+                             title= self.ajustTitle('Apontamentos Mensais', 's'))
         fig_sum_hours_month.update_layout(yaxis_title = 'Horas')
 
         fig_quantity_hours_month = px.line(quantityHoursFromMonth,
@@ -135,7 +143,7 @@ class TimekeppingDashboard:
                              range_y= (0, quantityHoursFromMonth.max()),
                              color= 'Ano',
                              line_dash= 'Ano',
-                             title= 'Apontamentos Mensais (QUANTIDADE)')
+                             title= self.ajustTitle('Apontamentos Mensais', 'q'))
         fig_quantity_hours_month.update_layout(yaxis_title = 'Horas')
         
         fig_sum_hours_feature = px.pie(sumHoursFromFeature, 
@@ -144,7 +152,7 @@ class TimekeppingDashboard:
                                        hole=.3,
                                        color='Modalidade',
                                        color_discrete_map=featuresMap,
-                                       title='Horas apontadas por Modalidade (SOMA)')
+                                       title= self.ajustTitle('Horas apontadas por Modalidade', 's'))
         
         fig_quantity_hours_feature = px.pie(quantityHoursFromFeature, 
                                        names='Modalidade', 
@@ -152,21 +160,21 @@ class TimekeppingDashboard:
                                        hole=.3,
                                        color='Modalidade',
                                        color_discrete_map=featuresMap,
-                                       title='Horas apontadas por Modalidade (QUANTIDADE)')
+                                       title= self.ajustTitle('Horas apontadas por Modalidade', 'q'))
         
         fig_sum_hours_project = px.pie(sumHoursFromProject, 
                                        names='Projeto', 
                                        values='Horas',
                                        hole=.3,
                                        color='Projeto',
-                                       title='Horas apontadas por Projeto (SOMA)')
+                                       title= self.ajustTitle('Horas apontadas por Projeto', 's'))
         
         fig_quantity_hours_project = px.pie(quantityHoursFromProject, 
                                        names='Projeto', 
                                        values='Horas',
                                        hole=.3,
                                        color='Projeto',
-                                       title='Horas apontadas por Projeto (QUANTIDADE)')
+                                       title= self.ajustTitle('Horas apontadas por Projeto', 'q'))
 
         # Views
         tabHours, tabQuantity = st.tabs(['Horas', 'Quantidade'])
