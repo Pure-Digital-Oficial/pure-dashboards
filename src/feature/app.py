@@ -1,12 +1,12 @@
 import streamlit as st
-from feature.pages.timekepping_dashboard import TimekeppingDashboard
+from feature.pages.time_notes_dashboard import TimeNotesDashboard
 
 class App:
     def __init__(self):
         st.set_page_config(page_title="Analises Pure Digital", layout="wide")
         self.pages = {
             "Página Principal": self.render_main_page,
-            "Timekeeping Dashboard": TimekeppingDashboard().renderPage
+            "Apontamentos Dashboard": TimeNotesDashboard().renderPage
         }
 
     def render_main_page(self):

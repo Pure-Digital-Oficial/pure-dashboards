@@ -2,11 +2,23 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from data_access.google_sheet_render import GoogleSheetsReader
-from feature.data.timekepping_data_filter import TimekeppingDataFilter
+from feature.data.time_notes_data_filter import TimeNotesDataFilter
 
-class TimekeppingDashboard:
+class TimeNotesDashboard:
     def __init__(self):
-        pass
+        self.readerGoogle = GoogleSheetsReader()
+        self.data = self.readerGoogle.get_dataframe()
+        self.monthPtBr = {
+            1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto', 9: 'Setembro',
+            10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+        }
+        self.featuresMap = {
+            'DEVOPS': '#0a53a8', 'BACKEND': '#b10202', 'FRONTEND': '#5ed3f3',
+            'UI/UX': '#cca1e9', 'VENDAS': '#0da543', 'ESTUDOS': '#ff8f00',
+            'MANUTENÇÃO': '#753800', 'NOSSA EMPRESA': '#e8eaed',
+            'REUNIÃO': '#0066fe', 'ANALISE': '#dd11a3'
+        }
     
     def ajustTitle(self, text, module):
         if module.lower() == "s":
@@ -17,57 +29,27 @@ class TimekeppingDashboard:
             return "Entrada inválida"
 
     def renderPage(self):
-        readerGoogle = GoogleSheetsReader()
-        data = readerGoogle.get_dataframe()
-
-        monthPtBr = {
-            1: 'Janeiro',
-            2: 'Fevereiro',
-            3: 'Março',
-            4: 'Abril',
-            5: 'Maio',
-            6: 'Junho',
-            7: 'Julho',
-            8: 'Agosto',
-            9: 'Setembro',
-            10: 'Outubro',
-            11: 'Novembro',
-            12: 'Dezembro'
-        }
-
-        featuresMap = {
-            'DEVOPS':'#0a53a8',
-            'BACKEND':'#b10202',
-            'FRONTEND':'#5ed3f3',
-            'UI/UX':'#cca1e9',
-            'VENDAS':'#0da543',
-            'ESTUDOS':'#ff8f00',
-            'MANUTENÇÃO':'#753800',
-            'NOSSA EMPRESA':'#e8eaed',
-            'REUNIÃO':'#0066fe',
-            'ANALISE':'#dd11a3'
-        }
         st.title('APONTAMENTOS HORAS TRABALHADAS')
 
         # Normalize Data
-        data['Nome'] = data['Nome'].str.strip()
-        data['Nome'] = data['Nome'].str.upper()
-        data['Modalidade'] = data['Modalidade'].str.strip()
-        data['Modalidade'] = data['Modalidade'].str.upper()
-        data['Horas'] = data['Horas'].str.replace(',', '.')
-        data['Horas'] = pd.to_numeric(data['Horas'])
-        data['Data'] = data['Data'].str.strip()
-        data['Data'] = pd.to_datetime(data['Data'], format='%d/%m/%Y')
-        data['AnoMes'] = data['Data'].dt.to_period('M')
+        self.data['Nome'] = self.data['Nome'].str.strip()
+        self.data['Nome'] = self.data['Nome'].str.upper()
+        self.data['Modalidade'] = self.data['Modalidade'].str.strip()
+        self.data['Modalidade'] = self.data['Modalidade'].str.upper()
+        self.data['Horas'] = self.data['Horas'].str.replace(',', '.')
+        self.data['Horas'] = pd.to_numeric(self.data['Horas'])
+        self.data['Data'] = self.data['Data'].str.strip()
+        self.data['Data'] = pd.to_datetime(self.data['Data'], format='%d/%m/%Y')
+        self.data['AnoMes'] = self.data['Data'].dt.to_period('M')
 
-        filterData = data['Data']
+        filterData = self.data['Data']
         
         # Filters Data
-        names = data['Nome'].unique().tolist()
-        modalities = data['Modalidade'].unique().tolist()
-        projects = data['Projeto'].str.upper().unique().tolist()        
+        names = self.data['Nome'].unique().tolist()
+        modalities = self.data['Modalidade'].unique().tolist()
+        projects = self.data['Projeto'].str.upper().unique().tolist()        
         months = filterData.dt.month.sort_values(ascending=True).unique().tolist()
-        months = [monthPtBr[month] for month in months]
+        months = [self.monthPtBr[month] for month in months]
         years = filterData.dt.year.sort_values(ascending=True).unique().tolist()
 
         # Filters
@@ -78,12 +60,12 @@ class TimekeppingDashboard:
         selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
         selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
 
-        data_filter = TimekeppingDataFilter(data)
+        data_filter = TimeNotesDataFilter(self.data)
         filtered_data = data_filter \
             .filter_by_name(selected_name) \
             .filter_by_modality(selected_modality) \
             .filter_by_year(selected_year, filterData) \
-            .filter_by_month(selected_month, filterData, monthPtBr) \
+            .filter_by_month(selected_month, filterData, self.monthPtBr) \
             .filter_by_project(selected_project) \
             .get_filtered_data()
 
@@ -99,13 +81,13 @@ class TimekeppingDashboard:
         sumHoursFromMonth = filtered_data.groupby('AnoMes', as_index=False)[['Horas']].sum()
         sumHoursFromMonth['Ano'] = sumHoursFromMonth['AnoMes'].dt.year
         sumHoursFromMonth['Mes'] = sumHoursFromMonth['AnoMes'].dt.month
-        sumHoursFromMonth['Mes'] = sumHoursFromMonth['Mes'].map(monthPtBr)
+        sumHoursFromMonth['Mes'] = sumHoursFromMonth['Mes'].map(self.monthPtBr)
         sumHoursFromMonth = sumHoursFromMonth.drop(columns=['AnoMes'])
 
         quantityHoursFromMonth = filtered_data.groupby('AnoMes', as_index=False)[['Horas']].count()
         quantityHoursFromMonth['Ano'] = quantityHoursFromMonth['AnoMes'].dt.year
         quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['AnoMes'].dt.month
-        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['Mes'].map(monthPtBr)
+        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['Mes'].map(self.monthPtBr)
         quantityHoursFromMonth = quantityHoursFromMonth.drop(columns=['AnoMes'])
 
         details = filtered_data[['Nome', 'Modalidade', 'Feature', 'Observacao', 'Problemas', 'Duvidas']]
@@ -149,7 +131,7 @@ class TimekeppingDashboard:
                                        values='Horas',
                                        hole=.3,
                                        color='Modalidade',
-                                       color_discrete_map=featuresMap,
+                                       color_discrete_map=self.featuresMap,
                                        title= self.ajustTitle('Horas apontadas por Modalidade', 's'))
         
         fig_quantity_hours_feature = px.pie(quantityHoursFromFeature, 
@@ -157,7 +139,7 @@ class TimekeppingDashboard:
                                        values='Horas',
                                        hole=.3,
                                        color='Modalidade',
-                                       color_discrete_map=featuresMap,
+                                       color_discrete_map=self.featuresMap,
                                        title= self.ajustTitle('Horas apontadas por Modalidade', 'q'))
         
         fig_sum_hours_project = px.pie(sumHoursFromProject, 
