@@ -54,7 +54,7 @@ class TimeNotesDashboard:
         self.selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
         self.selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
         self.selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
-
+        
     def applyFilters(self):
         data_filter = TimeNotesDataFilter(self.data)
         self.filtered_data = data_filter \
@@ -66,88 +66,41 @@ class TimeNotesDashboard:
             .get_filtered_data()
     
     def generateCharts(self):
-        sumHoursFromTeamMember = self.filtered_data.groupby('Nome')[['Horas']].sum()
-        sumHoursFromFeature = self.filtered_data.groupby('Modalidade', as_index=False)[['Horas']].sum()
-        sumHoursFromProject = self.filtered_data.groupby('Projeto', as_index=False)[['Horas']].sum()
+        # Combined aggregations to avoid redundant calculations
+        team_member_agg = self.filtered_data.groupby('Nome')['Horas'].agg(['sum', 'count']).reset_index()
+        feature_agg = self.filtered_data.groupby('Modalidade')['Horas'].agg(['sum', 'count']).reset_index()
+        project_agg = self.filtered_data.groupby('Projeto')['Horas'].agg(['sum', 'count']).reset_index()
         
-        quantityHoursFromTeamMember = self.filtered_data.groupby('Nome')[['Horas']].count()
-        quantityHoursFromFeature = self.filtered_data.groupby('Modalidade', as_index=False)[['Horas']].count()
-        quantityHoursFromProject = self.filtered_data.groupby('Projeto', as_index=False)[['Horas']].count()
+        # Month Agregation
+        month_agg = self.filtered_data.groupby('AnoMes')['Horas'].agg(['sum', 'count']).reset_index()
+        month_agg['Ano'] = month_agg['AnoMes'].dt.year
+        month_agg['Mes'] = month_agg['AnoMes'].dt.month.map(self.monthPtBr)
+        month_agg.drop(columns=['AnoMes'], inplace=True)
 
-        sumHoursFromMonth = self.filtered_data.groupby('AnoMes', as_index=False)[['Horas']].sum()
-        sumHoursFromMonth['Ano'] = sumHoursFromMonth['AnoMes'].dt.year
-        sumHoursFromMonth['Mes'] = sumHoursFromMonth['AnoMes'].dt.month
-        sumHoursFromMonth['Mes'] = sumHoursFromMonth['Mes'].map(self.monthPtBr)
-        sumHoursFromMonth = sumHoursFromMonth.drop(columns=['AnoMes'])
+        # Details
+        details = self.filtered_data[['Nome', 'Modalidade', 'Feature', 'Observacao', 'Problemas', 'Duvidas']].set_index("Nome")
 
-        quantityHoursFromMonth = self.filtered_data.groupby('AnoMes', as_index=False)[['Horas']].count()
-        quantityHoursFromMonth['Ano'] = quantityHoursFromMonth['AnoMes'].dt.year
-        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['AnoMes'].dt.month
-        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['Mes'].map(self.monthPtBr)
-        quantityHoursFromMonth = quantityHoursFromMonth.drop(columns=['AnoMes'])
+        # Create bar graphs
+        def create_bar_chart(data, x, y, title, yaxis_title='Horas'):
+            return px.bar(data, x=x, y=y, text_auto=True, title=title).update_layout(yaxis_title=yaxis_title)
 
-        details = self.filtered_data[['Nome', 'Modalidade', 'Feature', 'Observacao', 'Problemas', 'Duvidas']]
-        details.set_index("Nome", inplace=True)
+        # Create line graphs
+        def create_line_chart(data, x, y, color, title, yaxis_title='Horas'):
+            return px.line(data, x=x, y=y, markers=True, range_y=(0, data[y].max()), color=color, line_dash=color, title=title).update_layout(yaxis_title=yaxis_title)
+
+        # Create pizza graphs
+        def create_pie_chart(data, names, values, title, color_map=None):
+            return px.pie(data, names=names, values=values, hole=.3, color=names, color_discrete_map=color_map, title=title)
 
         return {
-            "fig_sum_hours_team": px.bar(
-                sumHoursFromTeamMember,
-                text_auto = True,
-                title = self.ajustTitle('Horas apontadas por Membro ', 's')
-            ).update_layout(yaxis_title = 'Horas'),
-            "fig_quantity_hours_team": px.bar(
-                quantityHoursFromTeamMember,
-                text_auto = True,
-                title = self.ajustTitle('Horas apontadas por Membro ', 'q')
-            ).update_layout(yaxis_title = 'Horas'),
-            "fig_sum_hours_month": px.line(sumHoursFromMonth,
-                x= 'Mes',
-                y= 'Horas',
-                markers=True,
-                range_y= (0, sumHoursFromMonth.max()),
-                color= 'Ano',
-                line_dash= 'Ano',
-                title= self.ajustTitle('Apontamentos Mensais', 's')
-            ).update_layout(yaxis_title = 'Horas'),
-            "fig_quantity_hours_month": px.line(quantityHoursFromMonth,
-                x= 'Mes',
-                y= 'Horas',
-                markers=True,
-                range_y= (0, quantityHoursFromMonth.max()),
-                color= 'Ano',
-                line_dash= 'Ano',
-                title= self.ajustTitle('Apontamentos Mensais', 'q')
-            ).update_layout(yaxis_title = 'Horas'),
-            "fig_sum_hours_feature": px.pie(sumHoursFromFeature, 
-                names='Modalidade', 
-                values='Horas',
-                hole=.3,
-                color='Modalidade',
-                color_discrete_map=self.featuresMap,
-                title= self.ajustTitle('Horas apontadas por Modalidade', 's')
-            ),
-            "fig_quantity_hours_feature": px.pie(quantityHoursFromFeature, 
-                names='Modalidade', 
-                values='Horas',
-                hole=.3,
-                color='Modalidade',
-                color_discrete_map=self.featuresMap,
-                title= self.ajustTitle('Horas apontadas por Modalidade', 'q')
-            ),
-            "fig_sum_hours_project": px.pie(sumHoursFromProject, 
-                names='Projeto', 
-                values='Horas',
-                hole=.3,
-                color='Projeto',
-                title= self.ajustTitle('Horas apontadas por Projeto', 's')
-            ),
-            "fig_quantity_hours_project": px.pie(quantityHoursFromProject, 
-               names='Projeto', 
-               values='Horas',
-               hole=.3,
-               color='Projeto',
-               title= self.ajustTitle('Horas apontadas por Projeto', 'q')
-            ),
+            "fig_sum_hours_team": create_bar_chart(team_member_agg, x='Nome', y='sum', title=self.ajustTitle('Horas apontadas por Membro ', 's')),
+            "fig_quantity_hours_team": create_bar_chart(team_member_agg, x='Nome', y='count', title=self.ajustTitle('Horas apontadas por Membro ', 'q')),
+            "fig_sum_hours_month": create_line_chart(month_agg, x='Mes', y='sum', color='Ano', title=self.ajustTitle('Apontamentos Mensais', 's')),
+            "fig_quantity_hours_month": create_line_chart(month_agg, x='Mes', y='count', color='Ano', title=self.ajustTitle('Apontamentos Mensais', 'q')),
+            "fig_sum_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='sum', title=self.ajustTitle('Horas apontadas por Modalidade', 's'), color_map=self.featuresMap),
+            "fig_quantity_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='count', title=self.ajustTitle('Horas apontadas por Modalidade', 'q'), color_map=self.featuresMap),
+            "fig_sum_hours_project": create_pie_chart(project_agg, names='Projeto', values='sum', title=self.ajustTitle('Horas apontadas por Projeto', 's')),
+            "fig_quantity_hours_project": create_pie_chart(project_agg, names='Projeto', values='count', title=self.ajustTitle('Horas apontadas por Projeto', 'q')),
             "details": details
         }
 
