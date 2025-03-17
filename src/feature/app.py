@@ -6,7 +6,7 @@ class App:
         st.set_page_config(page_title="Analises Pure Digital", layout="wide")
         self.pages = {
             "Página Principal": self.render_main_page,
-            "Apontamentos Dashboard": TimeNotesDashboard().renderPage
+            "Apontamentos Dashboard": TimeNotesDashboard().render_page
         }
 
     def render_main_page(self):

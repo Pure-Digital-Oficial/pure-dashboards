@@ -7,8 +7,20 @@ class GoogleSheetsReader:
     def __init__(self, service_account_file="service-account.json"):
         load_dotenv(dotenv_path="../.env")
         self.spreadsheet_url = os.getenv("GOOGLE_SHEETS_URL")
-        self.worksheet_name = os.getenv('GOOGLE_SHEETS_TIMEKEPPING_WORKSHEET')
+        self.worksheet_name = os.getenv('GOOGLE_SHEETS_TIMENOTES_WORKSHEET')
         self.credentials = gspread.service_account(filename=service_account_file)
+
+    def formalize_data(self):
+        self.data['Nome'] = self.data['Nome'].str.strip()
+        self.data['Nome'] = self.data['Nome'].str.upper()
+        self.data['Modalidade'] = self.data['Modalidade'].str.strip()
+        self.data['Modalidade'] = self.data['Modalidade'].str.upper()
+        self.data['Horas'] = self.data['Horas'].str.replace(',', '.')
+        self.data['Horas'] = pd.to_numeric(self.data['Horas'])
+        self.data['Data'] = self.data['Data'].str.strip()
+        self.data['Data'] = pd.to_datetime(self.data['Data'], format='%d/%m/%Y')
+        self.data['AnoMes'] = self.data['Data'].dt.to_period('M')
+        self.data['Projeto'] = self.data['Projeto'].str.upper()
 
     def get_dataframe(self):
         spreadsheet = self.credentials.open_by_url(self.spreadsheet_url)
@@ -18,15 +30,7 @@ class GoogleSheetsReader:
 
         columns = data.pop(0)
 
-        data = pd.DataFrame(data=data, columns=columns)
-        data['Nome'] = data['Nome'].str.strip()
-        data['Nome'] = data['Nome'].str.upper()
-        data['Modalidade'] = data['Modalidade'].str.strip()
-        data['Modalidade'] = data['Modalidade'].str.upper()
-        data['Horas'] = data['Horas'].str.replace(',', '.')
-        data['Horas'] = pd.to_numeric(data['Horas'])
-        data['Data'] = data['Data'].str.strip()
-        data['Data'] = pd.to_datetime(data['Data'], format='%d/%m/%Y')
-        data['AnoMes'] = data['Data'].dt.to_period('M')
+        self.data = pd.DataFrame(data=data, columns=columns)
+        self.formalize_data()
 
-        return data
+        return self.data

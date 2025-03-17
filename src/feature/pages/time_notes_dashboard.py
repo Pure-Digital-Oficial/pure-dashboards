@@ -20,7 +20,7 @@ class TimeNotesDashboard:
             'REUNIÃO': '#0066fe', 'ANALISE': '#dd11a3'
         }
     
-    def ajustTitle(self, text, module):
+    def ajust_title(self, text, module):
         if module.lower() == "s":
             return f'{text} (SOMA)'
         elif module.lower() == "q":
@@ -28,7 +28,7 @@ class TimeNotesDashboard:
         else:
             return "Entrada inválida"
 
-    def setupFilters(self):
+    def setup_filters(self):
         st.sidebar.title('Filtros')
         self.filterData = self.data['Data']
         names = self.data['Nome'].unique().tolist()
@@ -44,7 +44,7 @@ class TimeNotesDashboard:
         self.selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
         self.selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
         
-    def applyFilters(self):
+    def apply_filters(self):
         data_filter = TimeNotesDataFilter(self.data)
         self.filtered_data = data_filter \
             .filter_by_name(self.selected_name) \
@@ -54,7 +54,7 @@ class TimeNotesDashboard:
             .filter_by_project(self.selected_project) \
             .get_filtered_data()
     
-    def generateCharts(self):
+    def generate_charts(self):
         # Combined aggregations to avoid redundant calculations
         team_member_agg = self.filtered_data.groupby('Nome')['Horas'].agg(['sum', 'count']).reset_index()
         feature_agg = self.filtered_data.groupby('Modalidade')['Horas'].agg(['sum', 'count']).reset_index()
@@ -82,19 +82,19 @@ class TimeNotesDashboard:
             return px.pie(data, names=names, values=values, hole=.3, color=names, color_discrete_map=color_map, title=title)
 
         return {
-            "fig_sum_hours_team": create_bar_chart(team_member_agg, x='Nome', y='sum', title=self.ajustTitle('Horas apontadas por Membro ', 's')),
-            "fig_quantity_hours_team": create_bar_chart(team_member_agg, x='Nome', y='count', title=self.ajustTitle('Horas apontadas por Membro ', 'q')),
-            "fig_sum_hours_month": create_line_chart(month_agg, x='Mes', y='sum', color='Ano', title=self.ajustTitle('Apontamentos Mensais', 's')),
-            "fig_quantity_hours_month": create_line_chart(month_agg, x='Mes', y='count', color='Ano', title=self.ajustTitle('Apontamentos Mensais', 'q')),
-            "fig_sum_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='sum', title=self.ajustTitle('Horas apontadas por Modalidade', 's'), color_map=self.featuresMap),
-            "fig_quantity_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='count', title=self.ajustTitle('Horas apontadas por Modalidade', 'q'), color_map=self.featuresMap),
-            "fig_sum_hours_project": create_pie_chart(project_agg, names='Projeto', values='sum', title=self.ajustTitle('Horas apontadas por Projeto', 's')),
-            "fig_quantity_hours_project": create_pie_chart(project_agg, names='Projeto', values='count', title=self.ajustTitle('Horas apontadas por Projeto', 'q')),
+            "fig_sum_hours_team": create_bar_chart(team_member_agg, x='Nome', y='sum', title=self.ajust_title('Horas apontadas por Membro ', 's')),
+            "fig_quantity_hours_team": create_bar_chart(team_member_agg, x='Nome', y='count', title=self.ajust_title('Horas apontadas por Membro ', 'q')),
+            "fig_sum_hours_month": create_line_chart(month_agg, x='Mes', y='sum', color='Ano', title=self.ajust_title('Apontamentos Mensais', 's')),
+            "fig_quantity_hours_month": create_line_chart(month_agg, x='Mes', y='count', color='Ano', title=self.ajust_title('Apontamentos Mensais', 'q')),
+            "fig_sum_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='sum', title=self.ajust_title('Horas apontadas por Modalidade', 's'), color_map=self.featuresMap),
+            "fig_quantity_hours_feature": create_pie_chart(feature_agg, names='Modalidade', values='count', title=self.ajust_title('Horas apontadas por Modalidade', 'q'), color_map=self.featuresMap),
+            "fig_sum_hours_project": create_pie_chart(project_agg, names='Projeto', values='sum', title=self.ajust_title('Horas apontadas por Projeto', 's')),
+            "fig_quantity_hours_project": create_pie_chart(project_agg, names='Projeto', values='count', title=self.ajust_title('Horas apontadas por Projeto', 'q')),
             "details": details
         }
 
-    def renderLayout(self):
-        charts = self.generateCharts()
+    def render_layout(self):
+        charts = self.generate_charts()
         tabHours, tabQuantity = st.tabs(['Horas', 'Quantidade'])
 
         with tabHours:
@@ -123,8 +123,8 @@ class TimeNotesDashboard:
         
         st.dataframe(charts['details'], use_container_width = True)
     
-    def renderPage(self):
+    def render_page(self):
         st.title('APONTAMENTOS HORAS TRABALHADAS')
-        self.setupFilters()
-        self.applyFilters()
-        self.renderLayout()
+        self.setup_filters()
+        self.apply_filters()
+        self.render_layout()
