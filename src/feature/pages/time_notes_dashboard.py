@@ -64,14 +64,8 @@ class TimeNotesDashboard:
             .filter_by_month(self.selected_month, self.filterData, self.monthPtBr) \
             .filter_by_project(self.selected_project) \
             .get_filtered_data()
-
-    def renderPage(self):
-        st.title('APONTAMENTOS HORAS TRABALHADAS')
-        self.normalizeData()
-        self.setupFilters()
-        self.applyFilters()
-        
-        # Tables
+    
+    def generateCharts(self):
         sumHoursFromTeamMember = self.filtered_data.groupby('Nome')[['Horas']].sum()
         sumHoursFromFeature = self.filtered_data.groupby('Modalidade', as_index=False)[['Horas']].sum()
         sumHoursFromProject = self.filtered_data.groupby('Projeto', as_index=False)[['Horas']].sum()
@@ -95,96 +89,101 @@ class TimeNotesDashboard:
         details = self.filtered_data[['Nome', 'Modalidade', 'Feature', 'Observacao', 'Problemas', 'Duvidas']]
         details.set_index("Nome", inplace=True)
 
-        # Graphs
-        fig_sum_hours_team = px.bar(
-            sumHoursFromTeamMember,
-            text_auto = True,
-            title = self.ajustTitle('Horas apontadas por Membro ', 's')
-        )
-        fig_sum_hours_team.update_layout(yaxis_title = 'Horas')
+        return {
+            "fig_sum_hours_team": px.bar(
+                sumHoursFromTeamMember,
+                text_auto = True,
+                title = self.ajustTitle('Horas apontadas por Membro ', 's')
+            ).update_layout(yaxis_title = 'Horas'),
+            "fig_quantity_hours_team": px.bar(
+                quantityHoursFromTeamMember,
+                text_auto = True,
+                title = self.ajustTitle('Horas apontadas por Membro ', 'q')
+            ).update_layout(yaxis_title = 'Horas'),
+            "fig_sum_hours_month": px.line(sumHoursFromMonth,
+                x= 'Mes',
+                y= 'Horas',
+                markers=True,
+                range_y= (0, sumHoursFromMonth.max()),
+                color= 'Ano',
+                line_dash= 'Ano',
+                title= self.ajustTitle('Apontamentos Mensais', 's')
+            ).update_layout(yaxis_title = 'Horas'),
+            "fig_quantity_hours_month": px.line(quantityHoursFromMonth,
+                x= 'Mes',
+                y= 'Horas',
+                markers=True,
+                range_y= (0, quantityHoursFromMonth.max()),
+                color= 'Ano',
+                line_dash= 'Ano',
+                title= self.ajustTitle('Apontamentos Mensais', 'q')
+            ).update_layout(yaxis_title = 'Horas'),
+            "fig_sum_hours_feature": px.pie(sumHoursFromFeature, 
+                names='Modalidade', 
+                values='Horas',
+                hole=.3,
+                color='Modalidade',
+                color_discrete_map=self.featuresMap,
+                title= self.ajustTitle('Horas apontadas por Modalidade', 's')
+            ),
+            "fig_quantity_hours_feature": px.pie(quantityHoursFromFeature, 
+                names='Modalidade', 
+                values='Horas',
+                hole=.3,
+                color='Modalidade',
+                color_discrete_map=self.featuresMap,
+                title= self.ajustTitle('Horas apontadas por Modalidade', 'q')
+            ),
+            "fig_sum_hours_project": px.pie(sumHoursFromProject, 
+                names='Projeto', 
+                values='Horas',
+                hole=.3,
+                color='Projeto',
+                title= self.ajustTitle('Horas apontadas por Projeto', 's')
+            ),
+            "fig_quantity_hours_project": px.pie(quantityHoursFromProject, 
+               names='Projeto', 
+               values='Horas',
+               hole=.3,
+               color='Projeto',
+               title= self.ajustTitle('Horas apontadas por Projeto', 'q')
+            ),
+            "details": details
+        }
 
-        fig_quantity_hours_team = px.bar(
-            quantityHoursFromTeamMember,
-            text_auto = True,
-            title = self.ajustTitle('Horas apontadas por Membro ', 'q')
-        )
-        fig_quantity_hours_team.update_layout(yaxis_title = 'Horas')
-
-        fig_sum_hours_month = px.line(sumHoursFromMonth,
-                             x= 'Mes',
-                             y= 'Horas',
-                             markers=True,
-                             range_y= (0, sumHoursFromMonth.max()),
-                             color= 'Ano',
-                             line_dash= 'Ano',
-                             title= self.ajustTitle('Apontamentos Mensais', 's'))
-        fig_sum_hours_month.update_layout(yaxis_title = 'Horas')
-
-        fig_quantity_hours_month = px.line(quantityHoursFromMonth,
-                             x= 'Mes',
-                             y= 'Horas',
-                             markers=True,
-                             range_y= (0, quantityHoursFromMonth.max()),
-                             color= 'Ano',
-                             line_dash= 'Ano',
-                             title= self.ajustTitle('Apontamentos Mensais', 'q'))
-        fig_quantity_hours_month.update_layout(yaxis_title = 'Horas')
-        
-        fig_sum_hours_feature = px.pie(sumHoursFromFeature, 
-                                       names='Modalidade', 
-                                       values='Horas',
-                                       hole=.3,
-                                       color='Modalidade',
-                                       color_discrete_map=self.featuresMap,
-                                       title= self.ajustTitle('Horas apontadas por Modalidade', 's'))
-        
-        fig_quantity_hours_feature = px.pie(quantityHoursFromFeature, 
-                                       names='Modalidade', 
-                                       values='Horas',
-                                       hole=.3,
-                                       color='Modalidade',
-                                       color_discrete_map=self.featuresMap,
-                                       title= self.ajustTitle('Horas apontadas por Modalidade', 'q'))
-        
-        fig_sum_hours_project = px.pie(sumHoursFromProject, 
-                                       names='Projeto', 
-                                       values='Horas',
-                                       hole=.3,
-                                       color='Projeto',
-                                       title= self.ajustTitle('Horas apontadas por Projeto', 's'))
-        
-        fig_quantity_hours_project = px.pie(quantityHoursFromProject, 
-                                       names='Projeto', 
-                                       values='Horas',
-                                       hole=.3,
-                                       color='Projeto',
-                                       title= self.ajustTitle('Horas apontadas por Projeto', 'q'))
-
-        # Views
+    def renderLayout(self):
+        charts = self.generateCharts()
         tabHours, tabQuantity = st.tabs(['Horas', 'Quantidade'])
 
         with tabHours:
             columnLeft, columnRight = st.columns(2)
             with columnLeft:
                 st.metric('Soma Horas Apontadas', pd.to_numeric(self.filtered_data['Horas']).sum())
-                st.plotly_chart(fig_sum_hours_team, use_container_width = True)
-                st.plotly_chart(fig_sum_hours_feature, use_container_width = True)
+                st.plotly_chart(charts['fig_sum_hours_team'], use_container_width = True)
+                st.plotly_chart(charts['fig_sum_hours_feature'], use_container_width = True)
             
             with columnRight:
                 st.metric('Qtd de Apontamentos', self.filtered_data['Horas'].count())
-                st.plotly_chart(fig_sum_hours_month, use_container_width = True)
-                st.plotly_chart(fig_sum_hours_project, use_container_width = True)
+                st.plotly_chart(charts['fig_sum_hours_month'], use_container_width = True)
+                st.plotly_chart(charts['fig_sum_hours_project'], use_container_width = True)
 
         with tabQuantity:
                 columnLeft, columnRight = st.columns(2)
                 with columnLeft:
                     st.metric('Soma Horas Apontadas', pd.to_numeric(self.filtered_data['Horas']).sum())
-                    st.plotly_chart(fig_quantity_hours_team, use_container_width = True)
-                    st.plotly_chart(fig_quantity_hours_feature, use_container_width = True)
+                    st.plotly_chart(charts['fig_quantity_hours_team'], use_container_width = True)
+                    st.plotly_chart(charts['fig_quantity_hours_feature'], use_container_width = True)
 
                 with columnRight:
                     st.metric('Qtd de Apontamentos', self.filtered_data['Horas'].count())
-                    st.plotly_chart(fig_quantity_hours_month, use_container_width = True)
-                    st.plotly_chart(fig_quantity_hours_project, use_container_width = True)
+                    st.plotly_chart(charts['fig_quantity_hours_month'], use_container_width = True)
+                    st.plotly_chart(charts['fig_quantity_hours_project'], use_container_width = True)
         
-        st.dataframe(details, use_container_width = True)
+        st.dataframe(charts['details'], use_container_width = True)
+    
+    def renderPage(self):
+        st.title('APONTAMENTOS HORAS TRABALHADAS')
+        self.normalizeData()
+        self.setupFilters()
+        self.applyFilters()
+        self.renderLayout()
