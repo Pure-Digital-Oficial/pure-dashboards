@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from data_access.google_sheet_render import GoogleSheetsReader
-from feature.timekepping.timekepping_data_filter import TimekeppingDataFilter
+from feature.data.timekepping_data_filter import TimekeppingDataFilter
 
 class TimekeppingDashboard:
     def __init__(self):
@@ -47,9 +47,7 @@ class TimekeppingDashboard:
             'REUNIÃO':'#0066fe',
             'ANALISE':'#dd11a3'
         }
-
-        st.set_page_config(layout='wide')
-        st.title('DASHBOARD PURE DIGITAL :rocket:')
+        st.title('APONTAMENTOS HORAS TRABALHADAS')
 
         # Normalize Data
         data['Nome'] = data['Nome'].str.strip()
