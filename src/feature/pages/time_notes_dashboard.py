@@ -27,17 +27,6 @@ class TimeNotesDashboard:
             return f'{text} (QUANTIDADE)'
         else:
             return "Entrada inválida"
-    
-    def normalizeData(self):
-        self.data['Nome'] = self.data['Nome'].str.strip()
-        self.data['Nome'] = self.data['Nome'].str.upper()
-        self.data['Modalidade'] = self.data['Modalidade'].str.strip()
-        self.data['Modalidade'] = self.data['Modalidade'].str.upper()
-        self.data['Horas'] = self.data['Horas'].str.replace(',', '.')
-        self.data['Horas'] = pd.to_numeric(self.data['Horas'])
-        self.data['Data'] = self.data['Data'].str.strip()
-        self.data['Data'] = pd.to_datetime(self.data['Data'], format='%d/%m/%Y')
-        self.data['AnoMes'] = self.data['Data'].dt.to_period('M')
 
     def setupFilters(self):
         st.sidebar.title('Filtros')
@@ -136,7 +125,6 @@ class TimeNotesDashboard:
     
     def renderPage(self):
         st.title('APONTAMENTOS HORAS TRABALHADAS')
-        self.normalizeData()
         self.setupFilters()
         self.applyFilters()
         self.renderLayout()

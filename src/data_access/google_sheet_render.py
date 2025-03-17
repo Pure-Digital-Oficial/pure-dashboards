@@ -18,4 +18,15 @@ class GoogleSheetsReader:
 
         columns = data.pop(0)
 
-        return pd.DataFrame(data=data, columns=columns)
+        data = pd.DataFrame(data=data, columns=columns)
+        data['Nome'] = data['Nome'].str.strip()
+        data['Nome'] = data['Nome'].str.upper()
+        data['Modalidade'] = data['Modalidade'].str.strip()
+        data['Modalidade'] = data['Modalidade'].str.upper()
+        data['Horas'] = data['Horas'].str.replace(',', '.')
+        data['Horas'] = pd.to_numeric(data['Horas'])
+        data['Data'] = data['Data'].str.strip()
+        data['Data'] = pd.to_datetime(data['Data'], format='%d/%m/%Y')
+        data['AnoMes'] = data['Data'].dt.to_period('M')
+
+        return data
