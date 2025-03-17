@@ -1,4 +1,3 @@
-# main.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -28,7 +27,23 @@ class TimekeppingDashboard:
             12: 'Dezembro'
         }
 
+        featuresMap = {
+            'DEVOPS':'#0a53a8',
+            'BACKEND':'#b10202',
+            'FRONTEND':'#5ed3f3',
+            'UI/UX':'#cca1e9',
+            'VENDAS':'#0da543',
+            'ESTUDOS':'#ff8f00',
+            'MANUTENÇÃO':'#753800',
+            'NOSSA EMPRESA':'#e8eaed',
+            'REUNIÃO':'#0066fe',
+            'ANALISE':'#dd11a3'
+        }
+
         st.set_page_config(layout='wide')
+        st.title('DASHBOARD PURE DIGITAL :rocket:')
+
+        # Normalize Data
         data['Nome'] = data['Nome'].str.strip()
         data['Nome'] = data['Nome'].str.upper()
         data['Modalidade'] = data['Modalidade'].str.strip()
@@ -49,8 +64,6 @@ class TimekeppingDashboard:
         months = [monthPtBr[month] for month in months]
         years = filterData.dt.year.sort_values(ascending=True).unique().tolist()
 
-        st.title('DASHBOARD PURE DIGITAL :rocket:')
-        
         # Filters
         st.sidebar.title('Filtros')
         selected_name = st.sidebar.selectbox('Equipe', ['Todos'] + names)
@@ -58,7 +71,7 @@ class TimekeppingDashboard:
         selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
         selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
         selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
-
+            
         data_filter = TimekeppingDataFilter(data)
         filtered_data = data_filter \
             .filter_by_name(selected_name) \
@@ -69,18 +82,6 @@ class TimekeppingDashboard:
             .get_filtered_data()
 
         # Tables
-        featuresMap = {
-                        'DEVOPS':'#0a53a8',
-                        'BACKEND':'#b10202',
-                        'FRONTEND':'#5ed3f3',
-                        'UI/UX':'#cca1e9',
-                        'VENDAS':'#0da543',
-                        'ESTUDOS':'#ff8f00',
-                        'MANUTENÇÃO':'#753800',
-                        'NOSSA EMPRESA':'#e8eaed',
-                        'REUNIÃO':'#0066fe',
-                        'ANALISE':'#dd11a3'
-                    }
         sumHoursFromTeamMember = filtered_data.groupby('Nome')[['Horas']].sum()
         sumHoursFromFeature = filtered_data.groupby('Modalidade', as_index=False)[['Horas']].sum()
         sumHoursFromProject = filtered_data.groupby('Projeto', as_index=False)[['Horas']].sum()
