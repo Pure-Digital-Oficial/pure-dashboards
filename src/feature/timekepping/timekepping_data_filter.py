@@ -24,6 +24,12 @@ class TimekeppingDataFilter:
             month_number = list(month_mapping.keys())[list(month_mapping.values()).index(selected_month)]
             self.data = self.data[pd.to_datetime(date_column, format='%d/%m/%Y').dt.month == month_number]
         return self
+    
+    def filter_by_project(self, selected_project):
+        if selected_project != 'Todos':
+            self.data = self.data[self.data['Projeto'].str.upper() == selected_project]
+        return self
+
 
     def get_filtered_data(self):
         return self.data

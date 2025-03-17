@@ -35,22 +35,28 @@ class TimekeppingDashboard:
         data['Modalidade'] = data['Modalidade'].str.upper()
         data['Horas'] = data['Horas'].str.replace(',', '.')
         data['Horas'] = pd.to_numeric(data['Horas'])
+        data['Data'] = data['Data'].str.strip()
+        data['Data'] = pd.to_datetime(data['Data'], format='%d/%m/%Y')
+        data['AnoMes'] = data['Data'].dt.to_period('M')
 
         names = data['Nome'].unique().tolist()
         modalities = data['Modalidade'].unique().tolist()
+        projects = data['Projeto'].str.upper().unique().tolist()
 
-        filterData = data['Data'].str.strip()
-        months = pd.to_datetime(filterData, format='%d/%m/%Y').dt.month.sort_values(ascending=True).unique().tolist()
+        filterData = data['Data']
+        months = filterData.dt.month.sort_values(ascending=True).unique().tolist()
         months = [monthPtBr[month] for month in months]
-        years = pd.to_datetime(filterData, format='%d/%m/%Y').dt.year.sort_values(ascending=True).unique().tolist()
+        years = filterData.dt.year.sort_values(ascending=True).unique().tolist()
 
         st.title('DASHBOARD PURE DIGITAL :shopping_trolley:')
-
+        
+        # Filters
         st.sidebar.title('Filtros')
         selected_name = st.sidebar.selectbox('Equipe', ['Todos'] + names)
         selected_modality = st.sidebar.selectbox('Modalidades', ['Todos'] + modalities)
         selected_year = st.sidebar.selectbox('Ano', ['Todos'] + years)
         selected_month = st.sidebar.selectbox('Mês', ['Todos'] + months)
+        selected_project = st.sidebar.selectbox('Projetos', ['Todos'] + projects)
 
         data_filter = TimekeppingDataFilter(data)
         filtered_data = data_filter \
@@ -58,39 +64,111 @@ class TimekeppingDashboard:
             .filter_by_modality(selected_modality) \
             .filter_by_year(selected_year, filterData) \
             .filter_by_month(selected_month, filterData, monthPtBr) \
+            .filter_by_project(selected_project) \
             .get_filtered_data()
 
         # Tables
+        featuresMap = {
+                        'DEVOPS':'#0a53a8',
+                        'BACKEND':'#b10202',
+                        'FRONTEND':'#5ed3f3',
+                        'UI/UX':'#cca1e9',
+                        'VENDAS':'#0da543',
+                        'ESTUDOS':'#ff8f00',
+                        'MANUTENÇÃO':'#753800',
+                        'NOSSA EMPRESA':'#e8eaed',
+                        'REUNIÃO':'#0066fe',
+                        'ANALISE':'#dd11a3'
+                    }
         sumHoursFromTeamMember = filtered_data.groupby('Nome')[['Horas']].sum()
+        sumHoursFromFeature = filtered_data.groupby('Modalidade', as_index=False)[['Horas']].sum()
         
         quantityHoursFromTeamMember = filtered_data.groupby('Nome')[['Horas']].count()
+        quantityHoursFromFeature = filtered_data.groupby('Modalidade', as_index=False)[['Horas']].count()
+
+        sumHoursFromMonth = filtered_data.groupby('AnoMes', as_index=False)[['Horas']].sum()
+        sumHoursFromMonth['Ano'] = sumHoursFromMonth['AnoMes'].dt.year
+        sumHoursFromMonth['Mes'] = sumHoursFromMonth['AnoMes'].dt.month
+        sumHoursFromMonth['Mes'] = sumHoursFromMonth['Mes'].map(monthPtBr)
+        sumHoursFromMonth = sumHoursFromMonth.drop(columns=['AnoMes'])
+
+        quantityHoursFromMonth = filtered_data.groupby('AnoMes', as_index=False)[['Horas']].count()
+        quantityHoursFromMonth['Ano'] = quantityHoursFromMonth['AnoMes'].dt.year
+        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['AnoMes'].dt.month
+        quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['Mes'].map(monthPtBr)
+        quantityHoursFromMonth = quantityHoursFromMonth.drop(columns=['AnoMes'])
 
         # Graphs
         fig_sum_hours_team = px.bar(
             sumHoursFromTeamMember,
             text_auto = True,
-            title = 'Horas apontadas por Membro'
+            title = 'Soma horas apontadas por Membro'
         )
 
         fig_quantity_hours_team = px.bar(
             quantityHoursFromTeamMember,
             text_auto = True,
-            orientation = 'h',
-            title = 'Quantidade de Horas apontadas por Membro'
+            title = 'Quantidade de horas apontadas por Membro'
         )
 
-        
-        # Views
-        tabQuantity = st.tabs(['Apontamentos'])[0]
+        fig_sum_hours_month = px.line(sumHoursFromMonth,
+                             x= 'Mes',
+                             y= 'Horas',
+                             markers=True,
+                             range_y= (0, sumHoursFromMonth.max()),
+                             color= 'Ano',
+                             line_dash= 'Ano',
+                             title= 'Soma apontamentos Mensais')
+        fig_sum_hours_month.update_layout(yaxis_title = 'Horas')
 
-        with tabQuantity:
+        fig_quantity_hours_month = px.line(quantityHoursFromMonth,
+                             x= 'Mes',
+                             y= 'Horas',
+                             markers=True,
+                             range_y= (0, quantityHoursFromMonth.max()),
+                             color= 'Ano',
+                             line_dash= 'Ano',
+                             title= 'Contagem apontamentos Mensais')
+        fig_quantity_hours_month.update_layout(yaxis_title = 'Horas')
+        
+        fig_sum_hours_feature = px.pie(sumHoursFromFeature, 
+                                       names='Modalidade', 
+                                       values='Horas',
+                                       hole=.3,
+                                       color='Modalidade',
+                                       color_discrete_map=featuresMap,
+                                       title='Soma horas apontadas por Modalidade')
+        
+        fig_quantity_hours_feature = px.pie(quantityHoursFromFeature, 
+                                       names='Modalidade', 
+                                       values='Horas',
+                                       hole=.3,
+                                       color='Modalidade',
+                                       color_discrete_map=featuresMap,
+                                       title='Quantidade horas apontadas por Modalidade')
+
+        # Views
+        tabHours, tabQuantity = st.tabs(['Horas', 'Quantidade'])
+
+        with tabHours:
             columnLeft, columnRight = st.columns(2)
             with columnLeft:
-                st.metric('Qtd Horas Apontadas', pd.to_numeric(filtered_data['Horas']).sum())
+                st.metric('Soma Horas Apontadas', pd.to_numeric(filtered_data['Horas']).sum())
                 st.plotly_chart(fig_sum_hours_team, use_container_width = True)
+                st.plotly_chart(fig_sum_hours_feature, use_container_width = True)
             
             with columnRight:
                 st.metric('Qtd de Apontamentos', filtered_data['Horas'].count())
-                st.plotly_chart(fig_quantity_hours_team, use_container_width = True)
+                st.plotly_chart(fig_sum_hours_month, use_container_width = True)
+
+        with tabQuantity:
+                columnLeft, columnRight = st.columns(2)
+                with columnLeft:
+                    st.metric('Soma Horas Apontadas', pd.to_numeric(filtered_data['Horas']).sum())
+                    st.plotly_chart(fig_quantity_hours_team, use_container_width = True)
+                    st.plotly_chart(fig_quantity_hours_feature, use_container_width = True)
+                with columnRight:
+                    st.metric('Qtd de Apontamentos', filtered_data['Horas'].count())
+                    st.plotly_chart(fig_quantity_hours_month, use_container_width = True)
         
-        st.dataframe(filtered_data)
+        st.dataframe(sumHoursFromFeature)
