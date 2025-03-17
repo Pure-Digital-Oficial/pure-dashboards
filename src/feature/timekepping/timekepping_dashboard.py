@@ -39,16 +39,17 @@ class TimekeppingDashboard:
         data['Data'] = pd.to_datetime(data['Data'], format='%d/%m/%Y')
         data['AnoMes'] = data['Data'].dt.to_period('M')
 
+        filterData = data['Data']
+        
+        # Filters Data
         names = data['Nome'].unique().tolist()
         modalities = data['Modalidade'].unique().tolist()
-        projects = data['Projeto'].str.upper().unique().tolist()
-
-        filterData = data['Data']
+        projects = data['Projeto'].str.upper().unique().tolist()        
         months = filterData.dt.month.sort_values(ascending=True).unique().tolist()
         months = [monthPtBr[month] for month in months]
         years = filterData.dt.year.sort_values(ascending=True).unique().tolist()
 
-        st.title('DASHBOARD PURE DIGITAL :shopping_trolley:')
+        st.title('DASHBOARD PURE DIGITAL :rocket:')
         
         # Filters
         st.sidebar.title('Filtros')
@@ -82,9 +83,11 @@ class TimekeppingDashboard:
                     }
         sumHoursFromTeamMember = filtered_data.groupby('Nome')[['Horas']].sum()
         sumHoursFromFeature = filtered_data.groupby('Modalidade', as_index=False)[['Horas']].sum()
+        sumHoursFromProject = filtered_data.groupby('Projeto', as_index=False)[['Horas']].sum()
         
         quantityHoursFromTeamMember = filtered_data.groupby('Nome')[['Horas']].count()
         quantityHoursFromFeature = filtered_data.groupby('Modalidade', as_index=False)[['Horas']].count()
+        quantityHoursFromProject = filtered_data.groupby('Projeto', as_index=False)[['Horas']].count()
 
         sumHoursFromMonth = filtered_data.groupby('AnoMes', as_index=False)[['Horas']].sum()
         sumHoursFromMonth['Ano'] = sumHoursFromMonth['AnoMes'].dt.year
@@ -98,17 +101,20 @@ class TimekeppingDashboard:
         quantityHoursFromMonth['Mes'] = quantityHoursFromMonth['Mes'].map(monthPtBr)
         quantityHoursFromMonth = quantityHoursFromMonth.drop(columns=['AnoMes'])
 
+        details = filtered_data[['Nome', 'Modalidade', 'Feature', 'Observacao', 'Problemas', 'Duvidas']]
+        details.set_index("Nome", inplace=True)
+
         # Graphs
         fig_sum_hours_team = px.bar(
             sumHoursFromTeamMember,
             text_auto = True,
-            title = 'Soma horas apontadas por Membro'
+            title = 'Horas apontadas por Membro (SOMA)'
         )
 
         fig_quantity_hours_team = px.bar(
             quantityHoursFromTeamMember,
             text_auto = True,
-            title = 'Quantidade de horas apontadas por Membro'
+            title = 'Horas apontadas por Membro (QUANTIDADE)'
         )
 
         fig_sum_hours_month = px.line(sumHoursFromMonth,
@@ -118,7 +124,7 @@ class TimekeppingDashboard:
                              range_y= (0, sumHoursFromMonth.max()),
                              color= 'Ano',
                              line_dash= 'Ano',
-                             title= 'Soma apontamentos Mensais')
+                             title= 'Apontamentos Mensais (SOMA)')
         fig_sum_hours_month.update_layout(yaxis_title = 'Horas')
 
         fig_quantity_hours_month = px.line(quantityHoursFromMonth,
@@ -128,7 +134,7 @@ class TimekeppingDashboard:
                              range_y= (0, quantityHoursFromMonth.max()),
                              color= 'Ano',
                              line_dash= 'Ano',
-                             title= 'Contagem apontamentos Mensais')
+                             title= 'Apontamentos Mensais (QUANTIDADE)')
         fig_quantity_hours_month.update_layout(yaxis_title = 'Horas')
         
         fig_sum_hours_feature = px.pie(sumHoursFromFeature, 
@@ -137,7 +143,7 @@ class TimekeppingDashboard:
                                        hole=.3,
                                        color='Modalidade',
                                        color_discrete_map=featuresMap,
-                                       title='Soma horas apontadas por Modalidade')
+                                       title='Horas apontadas por Modalidade (SOMA)')
         
         fig_quantity_hours_feature = px.pie(quantityHoursFromFeature, 
                                        names='Modalidade', 
@@ -145,7 +151,21 @@ class TimekeppingDashboard:
                                        hole=.3,
                                        color='Modalidade',
                                        color_discrete_map=featuresMap,
-                                       title='Quantidade horas apontadas por Modalidade')
+                                       title='Horas apontadas por Modalidade (QUANTIDADE)')
+        
+        fig_sum_hours_project = px.pie(sumHoursFromProject, 
+                                       names='Projeto', 
+                                       values='Horas',
+                                       hole=.3,
+                                       color='Projeto',
+                                       title='Horas apontadas por Projeto (SOMA)')
+        
+        fig_quantity_hours_project = px.pie(quantityHoursFromProject, 
+                                       names='Projeto', 
+                                       values='Horas',
+                                       hole=.3,
+                                       color='Projeto',
+                                       title='Horas apontadas por Projeto (QUANTIDADE)')
 
         # Views
         tabHours, tabQuantity = st.tabs(['Horas', 'Quantidade'])
@@ -160,6 +180,7 @@ class TimekeppingDashboard:
             with columnRight:
                 st.metric('Qtd de Apontamentos', filtered_data['Horas'].count())
                 st.plotly_chart(fig_sum_hours_month, use_container_width = True)
+                st.plotly_chart(fig_sum_hours_project, use_container_width = True)
 
         with tabQuantity:
                 columnLeft, columnRight = st.columns(2)
@@ -167,8 +188,10 @@ class TimekeppingDashboard:
                     st.metric('Soma Horas Apontadas', pd.to_numeric(filtered_data['Horas']).sum())
                     st.plotly_chart(fig_quantity_hours_team, use_container_width = True)
                     st.plotly_chart(fig_quantity_hours_feature, use_container_width = True)
+
                 with columnRight:
                     st.metric('Qtd de Apontamentos', filtered_data['Horas'].count())
                     st.plotly_chart(fig_quantity_hours_month, use_container_width = True)
+                    st.plotly_chart(fig_quantity_hours_project, use_container_width = True)
         
-        st.dataframe(sumHoursFromFeature)
+        st.dataframe(details, use_container_width = True)
