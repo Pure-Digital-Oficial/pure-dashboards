@@ -27,11 +27,8 @@ class TimeNotesDashboard:
             return f'{text} (QUANTIDADE)'
         else:
             return "Entrada inválida"
-
-    def renderPage(self):
-        st.title('APONTAMENTOS HORAS TRABALHADAS')
-
-        # Normalize Data
+    
+    def normalizeData(self):
         self.data['Nome'] = self.data['Nome'].str.strip()
         self.data['Nome'] = self.data['Nome'].str.upper()
         self.data['Modalidade'] = self.data['Modalidade'].str.strip()
@@ -42,6 +39,9 @@ class TimeNotesDashboard:
         self.data['Data'] = pd.to_datetime(self.data['Data'], format='%d/%m/%Y')
         self.data['AnoMes'] = self.data['Data'].dt.to_period('M')
 
+    def renderPage(self):
+        st.title('APONTAMENTOS HORAS TRABALHADAS')
+        self.normalizeData()
         filterData = self.data['Data']
         
         # Filters Data
@@ -99,12 +99,14 @@ class TimeNotesDashboard:
             text_auto = True,
             title = self.ajustTitle('Horas apontadas por Membro ', 's')
         )
+        fig_sum_hours_team.update_layout(yaxis_title = 'Horas')
 
         fig_quantity_hours_team = px.bar(
             quantityHoursFromTeamMember,
             text_auto = True,
             title = self.ajustTitle('Horas apontadas por Membro ', 'q')
         )
+        fig_quantity_hours_team.update_layout(yaxis_title = 'Horas')
 
         fig_sum_hours_month = px.line(sumHoursFromMonth,
                              x= 'Mes',
