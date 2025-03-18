@@ -2,12 +2,12 @@ import os
 import gspread
 import pandas as pd
 from dotenv import load_dotenv
-
+#src\data_access\google_sheet_render.py
 class GoogleSheetsReader:
     def __init__(self, service_account_file="service-account.json"):
-        load_dotenv(dotenv_path="../.env")
+        load_dotenv(dotenv_path=".env")
         self.spreadsheet_url = os.getenv("GOOGLE_SHEETS_URL")
-        self.worksheet_name = os.getenv('GOOGLE_SHEETS_TIMENOTES_WORKSHEET')
+        self.worksheet_name = os.getenv('GOOGLE_SHEETS_TIME_NOTES_WORKSHEET')
         self.credentials = gspread.service_account(filename=service_account_file)
 
     def formalize_data(self):

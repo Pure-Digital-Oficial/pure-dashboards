@@ -9,3 +9,5 @@ services:
       - .:/app
     environment:
       - STREAMLIT_SERVER_RUN_ON_SAVE=true
+    env_file:
+      - .env
