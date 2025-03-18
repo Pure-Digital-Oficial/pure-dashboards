@@ -1,8 +1,8 @@
-from feature.timekepping_dashboard import TimekeppingDashboard
+from feature.app import App
 
 def main():
-    renderDashboard = TimekeppingDashboard()
-    renderDashboard.renderPage()
+    renderDashboard = App()
+    renderDashboard.run()
 
 if __name__ == "__main__":
     main()
